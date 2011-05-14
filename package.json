@@ -1,0 +1,20 @@
+{
+  "name": "image-proxy",
+  "description": "a image proxy for guys inside GFW",
+  "version": "0.0.1",
+  "homepage": "img.xuxiaoyu.com",
+  "author": "Rakuraku Jyo (http://twitter.com/xu_lele)",
+  "directories": {
+    "public": "./public"
+  },
+  "private": true,
+  "engines": {
+    "node": ">= 0.4.6"
+  },
+  "dependencies": {
+    "express": "",
+    "redis": "",
+    "request": "",
+    "jade": ""
+  }
+}
