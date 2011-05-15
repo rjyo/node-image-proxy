@@ -8,12 +8,13 @@ var express = require('express'),
     sys = require('sys'),
     crypto = require('crypto'),
     request = require('request'),
+    io = require('socket.io'),
     redis = require('redis'),
-    client = null,
-    app = module.exports = express.createServer();
+    redis_client = null,
+    app = module.exports = express.createServer(),
+    socket = io.listen(app, {origins: 'www.xuxiaoyu.com:*'});
 
 // Configuration
-
 app.configure(function() {
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
@@ -49,8 +50,8 @@ function downloadImage(url, digest, callback) {
       if (/image\/.+/.test(h['content-type'])) {
         console.log("saving to redis");
         // set hash = digest with 2 fields: data=body, header=header
-        client.hset(digest, 'body',  body, redis.print);
-        client.hset(digest, 'header', JSON.stringify(h), redis.print);
+        redis_client.hset(digest, 'body',  body, redis.print);
+        redis_client.hset(digest, 'header', JSON.stringify(h), redis.print);
 
         console.log('d = ' + digest);
         callback(h, body);
@@ -70,12 +71,12 @@ function sendFile(res, headers, body) {
 function getDigest(url) {
   var hash = crypto.createHash('sha1');
   hash.update(url);
-  return "img:" + hash.digest('hex');
+  return hash.digest('hex') + '_p';
 }
 
 app.get('/cache/clear', function(req, res) {
   console.log("Clearing all keys");
-  client.keys('img:*', function(err, results) {
+  redis_client.keys('*', function(err, results) {
     for (var key in results) {
       client.del(key);
     }
@@ -83,29 +84,68 @@ app.get('/cache/clear', function(req, res) {
   });
 });
 
-app.get('/u/:url', function(req, res) {
-  var url = req.params.url;
-  console.log('GET /u/' + url);
+// app.get('/u/:url', function(req, res) {
+//   var url = req.params.url;
+//   console.log('GET /u/' + url);
 
-  var digest = getDigest(url);
+//   var digest = getDigest(url);
 
-  client.exists(digest, function(err, result) {
+//   redis_client.exists(digest, function(err, result) {
+//     if (result == 1) {
+//       console.log("Using redis cache...");
+//       redis_client.hgetall(digest, function (err, data) { // get all values and keys for digest
+//         if (err) {
+//           res.send({err:-1});
+//         } else {
+//           sendFile(res, JSON.parse(data['header']), data['body']);
+//         }
+//       });
+//     } else {
+//       downloadImage(url, digest, function(header, body) {
+//         sendFile(res, header, body);
+//       });
+//     }
+//   });
+
+// });
+
+app.get('/i/:digest', function(req, res) {
+  var digest = req.params.digest;
+  console.log('GET /i/' + digest);
+
+  redis_client.hgetall(digest, function (err, data) { // get all values and keys for digest
+    if (err) {
+      sendFile(res, '', '');
+    } else {
+      sendFile(res, JSON.parse(data['header']), data['body']);
+    }
+  });
+});
+
+function retrieve_file(obj, socket_client) {
+  var digest = getDigest(obj.url);
+
+  redis_client.exists(digest, function(err, result) {
     if (result == 1) {
       console.log("Using redis cache...");
-      client.hgetall(digest, function (err, data) { // get all values and keys for digest
-        if (err) {
-          res.send({err:-1});
-        } else {
-          sendFile(res, JSON.parse(data['header']), data['body']);
-        }
-      });
+      socket_client.send({digest: digest, idx: obj.idx});
     } else {
-      downloadImage(url, digest, function(header, body) {
-        sendFile(res, header, body);
+      downloadImage(obj.url, digest, function(header, body) {
+        console.log("File downloaded...");
+        socket_client.send({digest: digest, idx: obj.idx});
       });
     }
   });
+}
 
+// Socket.io
+socket.on('connection', function(client){
+  console.log("connected");
+  // new client is here!
+  client.on('message', function(obj){
+    console.log(obj);
+    retrieve_file(obj, client);
+  });
 });
 
 // Only listen on $ node app.js
@@ -114,7 +154,7 @@ if (!module.parent) {
   console.log("Express server listening on port " + app.address().port);
 }
 
-//Set up Redis, dynamically discovering and connecting to the bound CloudFoundry service
+// Set up Redis, dynamically discovering and connecting to the bound CloudFoundry service
 if (process.env.VCAP_SERVICES) {
     console.log("Bound services detected.");
     var services = JSON.parse(process.env.VCAP_SERVICES);
@@ -124,11 +164,12 @@ if (process.env.VCAP_SERVICES) {
         if (serviceType.match(/redis*/)) {
             var service = services[serviceType][0];
             console.log("Connecting to Redis service " + service.name + ":" + service.credentials.hostname + ":" + service.credentials.port);
-            client = redis.createClient(service.credentials.port, service.credentials.hostname);
-            client.auth(service.credentials.password);
+            redis_client = redis.createClient(service.credentials.port, service.credentials.hostname);
+            redis_client.auth(service.credentials.password);
             break;
         }
     }
 } else {
-  client = redis.createClient();
+  redis_client = redis.createClient();
 }
+

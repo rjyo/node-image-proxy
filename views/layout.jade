@@ -2,6 +2,44 @@
 html
   head
     title= title
+    script(src="http://localhost:3000/socket.io/socket.io.js")
+    script(src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js")
   body
     #main!= body
+  script
+    var socket = new io.Socket('localhost');
+    socket.connect();
+
+    var imgMap = {};
+
+    $ = jQuery;
+    $(document).ready(function(){
+      socket.on('connect', function(){
+        $("img").each(function(idx) {
+          idx = 'i_' + idx;
+          console.log(idx);
+
+          var element = $(this);
+          imgMap[idx] = element;
+          socket.send({url: element.attr('src'), idx: idx});
+          // element.attr("src", settings["api-root"] + encodeURIComponent(element.attr("src")));
+        });
+      });
+
+      socket.on('message', function(msg){
+        if (msg.digest) {
+          console.log("file found: " + msg.digest);
+        }
+        if (msg.idx) {
+          console.log("file idx found: " + msg.idx);
+        }
+        var e = imgMap[msg.idx];
+        e.attr('src', 'http://localhost:3000/i/' + msg.digest);
+      });
+
+      socket.on('disconnect', function(){
+        console.log('disconnect');
+      });
+
+    });
 
