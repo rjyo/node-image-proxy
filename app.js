@@ -75,7 +75,7 @@ function getDigest(url) {
 
 app.get('/cache/clear', function(req, res) {
   console.log("Clearing all keys");
-  client.keys('*', function(err, results) {
+  client.keys('img:*', function(err, results) {
     for (var key in results) {
       client.del(key);
     }
