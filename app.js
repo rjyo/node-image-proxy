@@ -48,8 +48,10 @@ function downloadImage(url, digest, callback) {
       var h = response.headers;
       if (/image\/.+/.test(h['content-type'])) {
         console.log("saving to redis");
-        client.set(digest, body, redis.print);
-        client.set(digest + ':h', JSON.stringify(h), redis.print);
+        // set hash = digest with 2 fields: data=body, header=header
+        client.hset(digest, 'body',  body, redis.print);
+        client.hset(digest, 'header', JSON.stringify(h), redis.print);
+
         console.log('d = ' + digest);
         callback(h, body);
       }
@@ -58,7 +60,6 @@ function downloadImage(url, digest, callback) {
 }
 
 function sendFile(res, headers, body) {
-  console.log(headers);
   for (var key in headers) {
     res.header(key, headers[key]);
   }
@@ -66,26 +67,36 @@ function sendFile(res, headers, body) {
   res.end();
 }
 
+function getDigest(url) {
+  var hash = crypto.createHash('sha1');
+  hash.update(url);
+  return "img:" + hash.digest('hex');
+}
+
+app.get('/cache/clear', function(req, res) {
+  console.log("Clearing all keys");
+  client.keys('*', function(err, results) {
+    for (var key in results) {
+      client.del(key);
+    }
+    res.send({done:1});
+  });
+});
+
 app.get('/u/:url', function(req, res) {
   var url = req.params.url;
   console.log('GET /u/' + url);
 
-  var hash = crypto.createHash('sha1');
-  hash.update(url);
-  var digest = hash.digest('hex');
+  var digest = getDigest(url);
 
   client.exists(digest, function(err, result) {
     if (result == 1) {
       console.log("Using redis cache...");
-      client.get(digest, function (err, data) { // get entire file
+      client.hgetall(digest, function (err, data) { // get all values and keys for digest
         if (err) {
           res.send({err:-1});
         } else {
-          client.get(digest + ':h', function(err, header) {
-            if (!err) {
-              sendFile(res, JSON.parse(header), data);
-            }
-          });
+          sendFile(res, JSON.parse(data['header']), data['body']);
         }
       });
     } else {
