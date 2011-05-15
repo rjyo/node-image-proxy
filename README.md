@@ -1,6 +1,6 @@
 About node-image-proxy
 ===
-An image proxy written in node.js with a redis backend, Ready to run on cloud service like CloudFoundry.
+An image proxy written in node.js with a Redis backend, Ready to run on cloud services like CloudFoundry.
 
 What Is This For?
 ---
