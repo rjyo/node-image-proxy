@@ -1,12 +1,10 @@
-var downloadfile = "http://posterous.com/getfile/files.posterous.com/xuxiaoyu/IcDlkEmECIFeGCyGkjlEmHvgbFGHoeEkgAujjmHmzpazHfHmqpoCtAzeGxrm/p105.jpg.scaled500.jpg";
-var d2 = "http://s3.amazonaws.com/files.posterous.com/xuxiaoyu/IcDlkEmECIFeGCyGkjlEmHvgbFGHoeEkgAujjmHmzpazHfHmqpoCtAzeGxrm/p105.jpg.scaled500.jpg?AWSAccessKeyId=AKIAJFZAE65UYRT34AOQ&Expires=1305363103&Signature=7PbiUVKn4dmlau%2BmXedD9fkeldE%3D";
-// downloadfile = "http://hackback.cloudfoundry.com";
+var downloadfile = "http://www.google.com/images/logos/ps_logo2.png";
 
 var http = require("http"),
     fs = require("fs"),
     url = require("url");
 
-var filename = 'a.jpg';
+var filename = 'logo.png';
 var fh = fs.createWriteStream(filename, {flags: 'w', encoding: 'binary'});
 
 function download (u) {
