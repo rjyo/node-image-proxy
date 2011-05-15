@@ -23,44 +23,46 @@ Installation
 You need to add a simple Javascript to your blog, which let the blocked images be proxied. I wrote a jQuery plugin for that (public/imgProxy.js), but it's very simple and you can rewrite it using whatever you like.
 
 ```javascript
-    (function($) {
-      $.fn.imgProxy = function(options) {
-        var settings = {
-          "api-root" : "http://img.yourserver.com/u/"
-        };
-        if (options) {
-          $.extend(settings, options);
-        }
-
-        this.each(function() {
-          var element = $(this);
-          if (this.tagName.toLowerCase() == "img" && element.attr("src")) {
-            element.attr("src", settings["api-root"] + encodeURIComponent(element.attr("src")));
-          }
-        });
+  (function($) {
+    $.fn.imgProxy = function(options) {
+      var settings = {
+        "api-root" : "http://img.yourserver.com/u/"
       };
-    })(jQuery);
+      if (options) {
+        $.extend(settings, options);
+      }
+
+      this.each(function() {
+        var element = $(this);
+        if (this.tagName.toLowerCase() == "img" && element.attr("src")) {
+          element.attr("src", settings["api-root"] + encodeURIComponent(element.attr("src")));
+        }
+      });
+    };
+  })(jQuery);
 
 
-    $ = jQuery;
-    $(document).ready(function(){
-      $(".posterous_autopost img").imgProxy();
-    });
+  $ = jQuery;
+  $(document).ready(function(){
+    $(".posterous_autopost img").imgProxy();
+  });
 ```
 
 Install On Cloud Foundry
 ---
 Here is the how to install it on Cloud Foundry:
 
-    gem install vmc
-    vmc target api.cloudfoundry.com
-    vmc login # if you've got the invitation, it's in your mail
-    vmc push your_app
-    vmc env-add your_app NODE_ENV=production
+```bash
+  gem install vmc
+  vmc target api.cloudfoundry.com
+  vmc login # if you've got the invitation, it's in your mail
+  vmc push your_app
+  vmc env-add your_app NODE_ENV=production
 
-    # update your app
-    vmc update your_app
+  # update your app
+  vmc update your_app
 
-    # check status/logs
-    vmc stats your_app
-    vmc logs your_app
+  # check status/logs
+  vmc stats your_app
+  vmc logs your_app
+```
