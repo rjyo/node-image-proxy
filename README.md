@@ -14,14 +14,15 @@ What Else?
 ---
 I also included 3 demos in this project.
 
-* examples/image\_http.js - download a file using node's stand http module. 
-* examples/image\_request.js - download a file using [request](https://github.com/mikeal/request) and save it to Redis.
-* examples/image\_recover.js - recover a file from Redis to disk.
+* `examples/image\_http.js` - download a file using node's stand http module. 
+* `examples/image\_request.js` - download a file using [request](https://github.com/mikeal/request) and save it to Redis.
+* `examples/image\_recover.js` - recover a file from Redis to disk.
 
 Installation
 ---
 You need to add a simple Javascript to your blog, which let the blocked images be proxied. I wrote a jQuery plugin for that (public/imgProxy.js), but it's very simple and you can rewrite it using whatever you like.
 
+```javascript
     (function($) {
       $.fn.imgProxy = function(options) {
         var settings = {
@@ -45,6 +46,7 @@ You need to add a simple Javascript to your blog, which let the blocked images b
     $(document).ready(function(){
       $(".posterous_autopost img").imgProxy();
     });
+```
 
 Install On Cloud Foundry
 ---
