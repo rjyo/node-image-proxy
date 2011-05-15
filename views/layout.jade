@@ -2,12 +2,13 @@
 html
   head
     title= title
-    script(src="http://localhost:3000/socket.io/socket.io.js")
+    script(src="/socket.io/socket.io.js")
     script(src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js")
   body
     #main!= body
   script
-    var socket = new io.Socket('localhost');
+    // var socket = new io.Socket('localhost');
+    var socket = new io.Socket(null, {port: 3000, rememberTransport: false});
     socket.connect();
 
     var imgMap = {};
@@ -34,7 +35,7 @@ html
           console.log("file idx found: " + msg.idx);
         }
         var e = imgMap[msg.idx];
-        e.attr('src', 'http://localhost:3000/i/' + msg.digest);
+        e.attr('src', '/i/' + msg.digest);
       });
 
       socket.on('disconnect', function(){

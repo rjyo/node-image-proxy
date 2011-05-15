@@ -8,11 +8,12 @@ var express = require('express'),
     sys = require('sys'),
     crypto = require('crypto'),
     request = require('request'),
-    io = require('socket.io'),
+    sio = require('socket.io'),
     redis = require('redis'),
     redis_client = null,
-    app = module.exports = express.createServer(),
-    socket = io.listen(app, {origins: 'www.xuxiaoyu.com:*'});
+    app = module.exports = express.createServer();
+
+var io;
 
 // Configuration
 app.configure(function() {
@@ -35,12 +36,25 @@ app.configure('production', function() {
   app.use(express.logger('[:date] INFO :method :url :response-timems'));
 });
 
-app.get('/', function(req, res) {
-  console.log('GET /');
-  res.render('index', {
-    title: 'node-image-proxy online'
+
+//
+// helper functions
+//
+function retrieve_file(url, fn) {
+  var digest = getDigest(url);
+
+  redis_client.exists(digest, function(err, result) {
+    if (result == 1) {
+      console.log("Using redis cache...");
+      fn(digest);
+    } else {
+      downloadImage(url, digest, function(header, body) {
+        console.log("File downloaded...");
+        fn(digest);
+      });
+    }
   });
-});
+}
 
 function downloadImage(url, digest, callback) {
   console.log('downloading: ' + url);
@@ -74,6 +88,16 @@ function getDigest(url) {
   return hash.digest('hex') + '_p';
 }
 
+//
+// routes
+//
+app.get('/', function(req, res) {
+  console.log('GET /');
+  res.render('index', {
+    title: 'node-image-proxy online'
+  });
+});
+
 app.get('/cache/clear', function(req, res) {
   console.log("Clearing all keys");
   redis_client.keys('*', function(err, results) {
@@ -83,31 +107,6 @@ app.get('/cache/clear', function(req, res) {
     res.send({done:1});
   });
 });
-
-// app.get('/u/:url', function(req, res) {
-//   var url = req.params.url;
-//   console.log('GET /u/' + url);
-
-//   var digest = getDigest(url);
-
-//   redis_client.exists(digest, function(err, result) {
-//     if (result == 1) {
-//       console.log("Using redis cache...");
-//       redis_client.hgetall(digest, function (err, data) { // get all values and keys for digest
-//         if (err) {
-//           res.send({err:-1});
-//         } else {
-//           sendFile(res, JSON.parse(data['header']), data['body']);
-//         }
-//       });
-//     } else {
-//       downloadImage(url, digest, function(header, body) {
-//         sendFile(res, header, body);
-//       });
-//     }
-//   });
-
-// });
 
 app.get('/i/:digest', function(req, res) {
   var digest = req.params.digest;
@@ -122,37 +121,33 @@ app.get('/i/:digest', function(req, res) {
   });
 });
 
-function retrieve_file(obj, socket_client) {
-  var digest = getDigest(obj.url);
-
-  redis_client.exists(digest, function(err, result) {
-    if (result == 1) {
-      console.log("Using redis cache...");
-      socket_client.send({digest: digest, idx: obj.idx});
-    } else {
-      downloadImage(obj.url, digest, function(header, body) {
-        console.log("File downloaded...");
-        socket_client.send({digest: digest, idx: obj.idx});
-      });
-    }
-  });
-}
-
-// Socket.io
-socket.on('connection', function(client){
-  console.log("connected");
-  // new client is here!
-  client.on('message', function(obj){
-    console.log(obj);
-    retrieve_file(obj, client);
-  });
-});
-
 // Only listen on $ node app.js
 if (!module.parent) {
   app.listen(process.env.VMC_APP_PORT || 3000);
   console.log("Express server listening on port " + app.address().port);
+
+  var options = {};
+  // options.log = false;
+  // if (!options.transportOptions) options.transportOptions = {
+  //   'xhr-polling': { closeTimeout: 100 }
+  // };
+  options.origins = "*:*";
+  // options.transports = ['websocket', 'xhr-polling', 'flashsocket'];
+  options.transports = ['xhr-polling'];
+
+  io = sio.listen(app, options);
 }
+
+// Socket.io
+io.on('connection', function(client){
+  console.log("connected");
+  // new client is here!
+  client.on('message', function(obj){
+    retrieve_file(obj.url, function(digest) {
+      client.send({digest: digest, idx: obj.idx});
+    });
+  });
+});
 
 // Set up Redis, dynamically discovering and connecting to the bound CloudFoundry service
 if (process.env.VCAP_SERVICES) {
