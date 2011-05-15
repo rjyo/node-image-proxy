@@ -1,16 +1,50 @@
-Say Hello to HackBack
+About node-image-proxy
 ===
-this bookmarklet leads you back to HackerNews
+An image proxy written in node.js with a redis backend, Ready to run on cloud service like CloudFoundry.
 
 What Is This For?
 ---
-Here's the usecase: You opened a HackerNews link from Twitter, Facebook, your favorite RSS reader, or etc. But there's no easy way to check the original post and comments on HN, which might be more valuable that the link itself.
+I use posterous to update my blog from iPhone (which is much easier than WordPress's offical client), but the images from posterous are blocked in mainland China by the GFW. This image proxy can by-pass the block by sending the images from your own server.
 
-This bookmarklet does one simple job: it brings you back to the comment page on HN.
-
-Install The Bookmarket
+Why Redis?
 ---
-Goto [HackBack](http://hackback.cloudfoundry.com) on Cloud Foundry and drag the bookmarklet to your browsers' bookmark bar.
+node-image-proxy caches not only the image, but also the headers send from the original server. Redis's hset/hget commands can save easily both of them as a set. It's schema-less!
+
+What Else?
+---
+I also included 3 demos in this project.
+
+* sample/image\_http.js - download a file using node's stand http module. 
+* sample/image\_request.js - download a file using [request](https://github.com/mikeal/request) and save it to Redis.
+* sample/image\_recover.js - recover a file from Redis to disk.
+
+Installation
+---
+You need to add a simple Javascript to your blog, which let the blocked images be proxied. I wrote a jQuery plugin for that (public/imgProxy.js), but it's very simple and you can rewrite it using whatever you like.
+
+    (function($) {
+      $.fn.imgProxy = function(options) {
+        var settings = {
+          "api-root" : "http://img.yourserver.com/u/"
+        };
+        if (options) {
+          $.extend(settings, options);
+        }
+
+        this.each(function() {
+          var element = $(this);
+          if (this.tagName.toLowerCase() == "img" && element.attr("src")) {
+            element.attr("src", settings["api-root"] + encodeURIComponent(element.attr("src")));
+          }
+        });
+      };
+    })(jQuery);
+
+
+    $ = jQuery;
+    $(document).ready(function(){
+      $(".posterous_autopost img").imgProxy();
+    });
 
 Install On Cloud Foundry
 ---

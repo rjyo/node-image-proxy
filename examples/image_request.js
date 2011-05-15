@@ -3,7 +3,7 @@ var request = require('request'),
     crypto = require("crypto"),
     client = redis.createClient();
 
-var downloadfile = "http://posterous.com/getfile/files.posterous.com/xuxiaoyu/IcDlkEmECIFeGCyGkjlEmHvgbFGHoeEkgAujjmHmzpazHfHmqpoCtAzeGxrm/p105.jpg.scaled500.jpg";
+var downloadfile = "http://www.google.com/images/logos/ps_logo2.png";
 var hash = crypto.createHash('sha1');
 hash.update(downloadfile);
 var digest = hash.digest('hex');
