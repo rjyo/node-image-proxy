@@ -14,9 +14,9 @@ What Else?
 ---
 I also included 3 demos in this project.
 
-* sample/image\_http.js - download a file using node's stand http module. 
-* sample/image\_request.js - download a file using [request](https://github.com/mikeal/request) and save it to Redis.
-* sample/image\_recover.js - recover a file from Redis to disk.
+* examples/image\_http.js - download a file using node's stand http module. 
+* examples/image\_request.js - download a file using [request](https://github.com/mikeal/request) and save it to Redis.
+* examples/image\_recover.js - recover a file from Redis to disk.
 
 Installation
 ---
