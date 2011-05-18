@@ -58,20 +58,25 @@ function retrieve_file(url, fn) {
 
 function downloadImage(url, digest, callback) {
   console.log('downloading: ' + url);
-  request({uri:url, encoding:'binary'}, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      var h = response.headers;
-      if (/image\/.+/.test(h['content-type'])) {
-        console.log("saving to redis");
-        // set hash = digest with 2 fields: data=body, header=header
-        redis_client.hset(digest, 'body',  body, redis.print);
-        redis_client.hset(digest, 'header', JSON.stringify(h), redis.print);
+  try {
+    request({uri:url, encoding:'binary'}, function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        var h = response.headers;
+        if (/image\/.+/.test(h['content-type'])) {
+          console.log("saving to redis");
+          // set hash = digest with 2 fields: data=body, header=header
+          redis_client.hset(digest, 'body',  body, redis.print);
+          redis_client.hset(digest, 'header', JSON.stringify(h), redis.print);
 
-        console.log('d = ' + digest);
-        callback(h, body);
+          console.log('d = ' + digest);
+          callback(h, body);
+        }
       }
-    }
-  });
+    });
+  }catch (err) {
+    console.log("error in downloading");
+    console.log(err);
+  }
 }
 
 function sendFile(res, headers, body) {
